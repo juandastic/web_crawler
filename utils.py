@@ -50,7 +50,7 @@ def create_database(basename,host,port,user,password):
     try:
         with connection.cursor() as cursor:
             # Create database
-            sql = "CREATE DATABASE `{};".format(basename)
+            sql = "CREATE DATABASE `{}`;".format(basename)
             cursor.execute(sql)
         # connection is not autocommit by default. So you must commit to save
         # your changes.
