@@ -1,4 +1,5 @@
 from urllib.parse import urlparse, urljoin
+from scrapy.settings import Settings
 import time
 import pymysql.cursors
 
@@ -77,24 +78,35 @@ def create_urls_table(basename,host,port,user,password):
             sql = """
             CREATE TABLE `urls` (
                 `id` int(11) NOT NULL AUTO_INCREMENT,
-                `url` varchar(2048) NOT NULL,
+                `url` varchar(4096) NOT NULL,
                 `response_code` int(11) NOT NULL DEFAULT '0',
                 `content_type` varchar(128) DEFAULT NULL,
                 `level` int(11) NOT NULL DEFAULT '-1',
-                `referer` varchar(2048) DEFAULT NULL,
+                `referer` varchar(4096) DEFAULT NULL,
                 `latency` float(11) DEFAULT '0',
                 `crawled_at` varchar(128) DEFAULT '0',
-                `title` varchar(256) DEFAULT NULL,
+                `nb_title` int(11) NOT NULL DEFAULT '0',
+                `title` varchar(512) DEFAULT NULL,
+                `nb_meta_robots` int(11) NOT NULL DEFAULT '0',
                 `meta_robots` varchar(256) DEFAULT NULL,
-                `meta_description` varchar(256) DEFAULT NULL,
+                `meta_description` varchar(1024) DEFAULT NULL,
                 `meta_viewport` varchar(256) DEFAULT NULL,
                 `meta_keywords` varchar(256) DEFAULT NULL,
-                `canonical` varchar(2048) DEFAULT NULL,
-                `h1` varchar(256) DEFAULT NULL,
+                `canonical` varchar(4096) DEFAULT NULL,
+                `prev` varchar(4096) DEFAULT NULL,
+                `next` varchar(4096) DEFAULT NULL,
+                `h1` varchar(512) DEFAULT NULL,
+                `nb_h1` int(11) NOT NULL DEFAULT '0',
+                `nb_h2` int(11) NOT NULL DEFAULT '0',
                 `wordcount` int(11) DEFAULT '0',
                 `content` text DEFAULT NULL,
                 `XRobotsTag` varchar(256) DEFAULT NULL,
                 `outlinks` int(11) DEFAULT '0',
+                `http_date` varchar(256) DEFAULT NULL,
+                `size` int(11) DEFAULT NULL,
+                `html_lang` varchar(128) DEFAULT NULL,
+                `hreflangs` text DEFAULT NULL,
+                `microdata` text DEFAULT NULL,
                 PRIMARY KEY (id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=1;
             """
@@ -122,8 +134,8 @@ def create_links_table(basename,host,port,user,password):
             sql = """
             CREATE TABLE `links` (
                 `id` int(11) NOT NULL AUTO_INCREMENT,
-                `source` varchar(2048) NOT NULL,
-                `target` varchar(2048) NOT NULL,
+                `source` varchar(4096) NOT NULL,
+                `target` varchar(4096) NOT NULL,
                 `text` varchar(1024) NOT NULL,
                 `weight` float DEFAULT '1',
                 `nofollow` tinyint(1) DEFAULT NULL,
@@ -136,3 +148,23 @@ def create_links_table(basename,host,port,user,password):
 
     finally:
         connection.close()
+
+def get_settings():
+    """
+    Creates Scrapy Settings object and sets basic values.
+    Other values will be set in the project config file.
+    """
+    settings = Settings({
+        # Crawling URLs from the same level before going deeper
+        'DEPTH_PRIORITY': 1, # Don't touch
+        'SCHEDULER_DISK_QUEUE': 'scrapy.squeues.PickleFifoDiskQueue', # Don't touch
+        'SCHEDULER_MEMORY_QUEUE': 'scrapy.squeues.FifoMemoryQueue', # Don't touch
+
+        # Internal Scrapy stuff
+        'HTTPERROR_ALLOW_ALL': True, # Allows to store results for non-200 URLs
+        'RETRY_ENABLED': False,
+        'MEDIA_ALLOW_REDIRECTS' : True,
+        'LOG_LEVEL': 'INFO',
+    })
+
+    return settings

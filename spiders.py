@@ -6,9 +6,11 @@ from scrapy.linkextractors import LinkExtractor
 import scrapy
 import w3lib
 import re
+import json
+import extruct
 
 from utils import *
-from pipelines import CrowlPipeline
+from pipelines import *
 from items import CrowlItem
 
 class Crowler(CrawlSpider):
@@ -36,7 +38,7 @@ class Crowler(CrawlSpider):
         Scrapy doesn't parse start URL by default, but this does the trick.  
         """
         self.logger.info("Crawl started with url: {} ({})".format(response.url, response.status))
-        self.logger.info("Database: {}".format(self.settings.get('MYSQL_DB')))
+        self.logger.info("Output: {}".format(self.settings.get('OUTPUT_NAME')))
         yield self.parse_item(response) # Simply yield the response to our main function
 
     def parse_url(self, response):
@@ -60,6 +62,7 @@ class Crowler(CrawlSpider):
         i['level'] = response.meta.get('depth', 0)
         i['latency'] = response.meta.get('download_latency')
         i['crawled_at'] = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z')
+        i['size'] = len(response.body)
 
         ref = response.request.headers.get('Referer', None)
         if ref: # Not always a referer, see config
@@ -70,16 +73,43 @@ class Crowler(CrawlSpider):
         typ = response.headers.get('Content-Type', None)
         if typ:
             i['content_type'] = typ.decode('utf-8')
+        dat = response.headers.get('date', None)
+        if dat: # date from HTTP headers
+            i['http_date'] = dat.decode('utf-8')
 
         if response.status == 200: # Data only available for 200 OK urls  
             # `extract_first(default='None')` returns 'None' if empty, prevents errors
+            i['nb_title'] = len(response.xpath('//title').extract())
             i['title'] = response.xpath('//title/text()').extract_first(default='None').strip()
             i['meta_description'] = response.xpath('//meta[@name=\'description\']/@content').extract_first(default='None').strip()
             i['meta_viewport'] = response.xpath('//meta[@name=\'viewport\']/@content').extract_first(default='None').strip()
             i['meta_keywords'] = response.xpath('//meta[@name=\'keywords\']/@content').extract_first(default='None').strip()
+            i['nb_meta_robots'] = len(response.xpath('//meta[@name=\'robots\']').extract())
             i['meta_robots'] = response.xpath('//meta[@name=\'robots\']/@content').extract_first(default='None').strip()
-            i['h1'] = response.xpath('//h1/text()').extract_first(default='None').strip()
+            i['nb_h1'] = len(response.xpath('//h1').extract())
+            h1 = ''.join(response.xpath('//h1[1]//text()').extract())
+            if len(h1) > 0:
+                i['h1'] = h1
+            else:
+                i['h1'] = 'None'
+
+            i['nb_h2'] = len(response.xpath('//h2').extract())
             i['canonical'] = response.xpath('//link[@rel=\'canonical\']/@href').extract_first(default='None').strip()
+            i['prev'] = response.xpath('//link[@rel="prev"]/@href').extract_first(default='None').strip()
+            i['next'] = response.xpath('//link[@rel="next"]/@href').extract_first(default='None').strip()
+            i['html_lang'] = response.xpath('//html/@lang').extract_first(default='None').strip()
+            hreflangs = response.xpath('//link[@hreflang]')
+            if hreflangs:
+                res =  list()
+                for index, hreflang in enumerate(hreflangs):
+                    res.append({
+                        'lang': hreflang.xpath('@hreflang').extract_first(default='None').strip(),
+                        'rel': hreflang.xpath('@rel').extract_first(default='None').strip(),
+                        'href': hreflang.xpath('@href').extract_first(default='None').strip(),
+                    })
+                i['hreflangs'] = json.dumps(res)
+            else:
+                i['hreflangs'] = 'None'
             
             # Word Count
             body_content = response.xpath('//body').extract()[0]
@@ -116,8 +146,17 @@ class Crowler(CrawlSpider):
                     outlinks.append(lien)
 
                 i['outlinks'] = outlinks
+
+            # Microdata
+            base_url = w3lib.html.get_base_url(response.text, response.url)
+            data = extruct.extract(response.text, base_url=base_url, syntaxes=['microdata', 'json-ld'], uniform=True)
+            for key in list(data):
+                if len(data[key]) == 0:
+                    data.pop(key, None)
+            if len(data) > 0:
+                i["microdata"] = json.dumps(data, ensure_ascii=False)
         return i 
 
     def closed(self, reason):
-        self.logger.info("Database: {}".format(self.settings.get('MYSQL_DB')))
+        self.logger.info("Output: {}".format(self.settings.get('OUTPUT_NAME')))
         self.logger.info("Spider closed")

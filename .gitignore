@@ -1,4 +1,6 @@
-config.ini
+*.ini
+!config.sample.ini
+*.csv
 
 # General
 .DS_Store

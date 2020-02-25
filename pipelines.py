@@ -3,9 +3,11 @@ from pymysql import OperationalError
 from pymysql.constants.CR import CR_SERVER_GONE_ERROR,  CR_SERVER_LOST, CR_CONNECTION_ERROR
 from twisted.internet import defer
 from twisted.enterprise import adbapi
+from scrapy.exporters import CsvItemExporter
 import copy
+import logging
 
-class CrowlPipeline:
+class CrowlMySQLPipeline:
     """
     Stores crawled data into MySQL.  
     Inspired by https://github.com/IaroslavR/scrapy-mysql-pipeline  
@@ -15,6 +17,7 @@ class CrowlPipeline:
         return cls(crawler)
 
     def __init__(self, crawler):
+        logger = logging.getLogger(__name__)
         self.stats = crawler.stats
         self.settings = crawler.settings
         db_args = {
@@ -22,7 +25,7 @@ class CrowlPipeline:
             'port': int(self.settings.get('MYSQL_PORT', 3306)),
             'user': self.settings.get('MYSQL_USER', None),
             'password': self.settings.get('MYSQL_PASSWORD', ''),
-            'db': self.settings.get('MYSQL_DB', None),
+            'db': self.settings.get('OUTPUT_NAME', None),
             'charset': 'utf8',
             'cursorclass': DictCursor,
             'cp_reconnect': True,
@@ -128,4 +131,86 @@ class CrowlPipeline:
             logger.error("SQL: %s", sql)
             raise
 
-        #self.stats.inc_value('{}/saved'.format(self.stats_name))
+
+class CrowlCsvPipeline:
+    """
+    Writes data to CSV files.
+    """
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
+    
+    def __init__(self, crawler):
+        logger = logging.getLogger(__name__)
+        self.stats = crawler.stats
+        self.settings = crawler.settings
+
+        self.urls_file = open('{}_urls.csv'.format(self.settings.get('OUTPUT_NAME', 'output')), 'ab')
+        self.urls_exporter   = CsvItemExporter(self.urls_file, include_headers_line=True)
+        # Listing the fields ensures their order stays the same. Be sure to update the list if you add more fields!
+        self.urls_exporter.fields_to_export = [
+            'url',
+            'response_code',
+            'content_type',
+            'level',
+            'referer',
+            'latency',
+            'crawled_at',
+            'nb_title',
+            'title',
+            'nb_meta_robots',
+            'meta_robots',
+            'meta_description',
+            'meta_viewport',
+            'meta_keywords',
+            'canonical',
+            'prev',
+            'next',
+            'h1',
+            'nb_h1',
+            'nb_h2',
+            'wordcount',
+            'content',
+            'XRobotsTag',
+            'outlinks',
+            'http_date',
+            'size',
+            'html_lang',
+            'hreflangs',
+            'microdata',
+        ]
+        self.urls_exporter.start_exporting()
+
+        self.links_file = open('{}_links.csv'.format(self.settings.get('OUTPUT_NAME', 'output')), 'ab')
+        self.links_exporter   = CsvItemExporter(self.links_file, include_headers_line=True)
+        self.links_exporter.fields_to_export = [
+            'source',
+            'target',
+            'text',
+            'weight',
+            'nofollow',
+            'disallow',
+        ]
+        self.links_exporter.start_exporting()
+
+    def close_spider(self, spider):
+        self.urls_exporter.finish_exporting()
+        self.links_exporter.finish_exporting()
+        self.urls_file.close()
+        self.links_file.close()
+
+    @defer.inlineCallbacks
+    def process_item(self, item, spider):
+        # Prevents crushing data before yielding item
+        tmprow = copy.deepcopy(item) 
+        # First we insert the links  
+        if tmprow.get('outlinks'):
+            links = tmprow['outlinks']
+            for link in links:
+                self.links_exporter.export_item(link)
+
+            # Replace outlinks dict with count of outlinks before inserting url data
+            tmprow['outlinks'] = len(links)
+        self.urls_exporter.export_item(tmprow)
+
+        yield item
