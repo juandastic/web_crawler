@@ -154,7 +154,7 @@ class Crowler(CrawlSpider):
                 if len(data[key]) == 0:
                     data.pop(key, None)
             if len(data) > 0:
-                i["microdata"] = json.dumps(data, ensure_ascii=False)
+                i["microdata"] = json.dumps(data, ensure_ascii=True)
         return i 
 
     def closed(self, reason):

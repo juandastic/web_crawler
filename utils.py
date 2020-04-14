@@ -78,7 +78,7 @@ def create_urls_table(basename,host,port,user,password):
             sql = """
             CREATE TABLE `urls` (
                 `id` int(11) NOT NULL AUTO_INCREMENT,
-                `url` varchar(4096) NOT NULL,
+                `url` text NOT NULL,
                 `response_code` int(11) NOT NULL DEFAULT '0',
                 `content_type` varchar(128) DEFAULT NULL,
                 `level` int(11) NOT NULL DEFAULT '-1',
@@ -106,7 +106,7 @@ def create_urls_table(basename,host,port,user,password):
                 `size` int(11) DEFAULT NULL,
                 `html_lang` varchar(128) DEFAULT NULL,
                 `hreflangs` text DEFAULT NULL,
-                `microdata` text DEFAULT NULL,
+                `microdata` longtext DEFAULT NULL,
                 PRIMARY KEY (id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=1;
             """
