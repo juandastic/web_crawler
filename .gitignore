@@ -1,6 +1,3 @@
-*.ini
-!la_haus.ini
-!config.sample.ini
 *.csv
 
 # General
