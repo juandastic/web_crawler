@@ -30,5 +30,8 @@ The app container initializes a Linux with python 3 installed but it isn't run t
 
 with that command we open a terminal inside the container, then we could start the crawler script
 
-`` python crowl.py --conf la_haus.ini ``
+Single page crawl 
+`` python crowl.py --conf la_haus_med_srp.ini ``
 
+Whole website crawl *8h*
+`` python crowl.py --conf la_haus_global.ini ``
