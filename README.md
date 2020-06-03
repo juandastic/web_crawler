@@ -55,3 +55,6 @@ Example:
     # Resume crawl using Database ID  
     python crowl.py -u https://www.crowl.tech/ -r crowltech_20180624-164347  
 
+## Contributing
+
+If you wish to contribute to this repository or to report an issue, please do this [on GitLab](https://gitlab.com/crowltech/crowl).  
