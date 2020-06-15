@@ -47,6 +47,7 @@ if __name__ == '__main__':
         'links': config.getboolean('EXTRACTION','LINKS',fallback=False),
         'content': config.getboolean('EXTRACTION','CONTENT',fallback=False),
         'depth': int(config.get('EXTRACTION','DEPTH',fallback=5)),
+        'exclusion_pattern': config.get('CRAWLER','EXCLUSION_PATTERN',fallback=None)
     }
 
     # Output pipelines
