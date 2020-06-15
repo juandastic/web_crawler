@@ -17,12 +17,17 @@ class Crowler(CrawlSpider):
     name = 'Crowl'
     handle_httpstatus_list = [301,302,404,410,500,503,504]
 
-    def __init__(self, url, links=False, content=False, depth=5, *args, **kwargs):
+    def __init__(self, url, links=False, content=False, depth=5, exclusion_pattern=None, *args, **kwargs):
         domain = urlparse(url).netloc
-        # We'll crawl only internal links
-        self._rules = [
-            Rule(LinkExtractor(allow='.*'+domain+'/.*'), callback=self.parse_url, follow=True)
-        ]
+        # Setup the rules for link extraction
+        if exclusion_pattern:
+            self._rules = [
+                Rule(LinkExtractor(allow='.*'+domain+'/.*', deny=exclusion_pattern), callback=self.parse_url, follow=True)
+            ]
+        else:
+            self._rules = [
+                Rule(LinkExtractor(allow='.*'+domain+'/.*'), callback=self.parse_url, follow=True)
+            ]
         self.allowed_domains = [domain]
         self.start_urls = [url]
         self.links = links # Should we store links ?
