@@ -18,7 +18,7 @@ Install requirements:
 As of v0.2, Crowl now uses configuration files in order to store all configuration options for each project you're working on.  
 
 Copy the `config.sample.ini` file to `yourproject.ini` and set your own settings.  
-The required settings are PROJECT_NAME> and START_URL. You can keep other default settings for now ;)  
+The required settings are `PROJECT_NAME` and `START_URL`. You can keep other default settings for now ;)  
 Check out [the docs](https://www.crowl.tech/docs/) for more configuration options.  
 
 
