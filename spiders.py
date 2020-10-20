@@ -48,17 +48,17 @@ class Crowler(CrawlSpider):
         # Prevents from re-crawling start URL (ugly but works ...)
         if response.url != self.start_urls[0]:
             # Respect max depth setting, as Scrapy internal setting doesn't seem to work
-            if response.meta.get('depth', 0) < (self.depth + 1): 
+            if response.meta.get('depth', 0) < (self.depth + 1):
                 yield self.parse_item(response)
 
     def parse_item(self, response):
         """
-        Main function, parses response and extracts data.  
+        Main function, parses response and extracts data.
         """
         self.logger.info("{} ({})".format(response.url, response.status))
         i = CrowlItem()
         i['url'] = response.url
-        i['response_code'] = response.status 
+        i['response_code'] = response.status
         i['level'] = response.meta.get('depth', 0)
         i['latency'] = response.meta.get('download_latency')
         i['crawled_at'] = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z')
@@ -77,7 +77,7 @@ class Crowler(CrawlSpider):
         if dat: # date from HTTP headers
             i['http_date'] = dat.decode('utf-8')
 
-        if response.status == 200: # Data only available for 200 OK urls  
+        if response.status == 200: # Data only available for 200 OK urls
             # `extract_first(default='None')` returns 'None' if empty, prevents errors
             i['nb_title'] = len(response.xpath('//title').extract())
             i['title'] = response.xpath('//title/text()').extract_first(default='None').strip()
@@ -110,13 +110,13 @@ class Crowler(CrawlSpider):
                 i['hreflangs'] = json.dumps(res)
             else:
                 i['hreflangs'] = 'None'
-            
+
             # Word Count
             body_content = response.xpath('//body').extract()[0]
             content_text = w3lib.html.remove_tags_with_content(body_content, which_ones=('style','script'))
             content_text = w3lib.html.remove_tags(content_text)
             i['wordcount'] = len(re.split('[\s\t\n, ]+',content_text, flags=re.UNICODE))
-            
+
             if self.content: # Should we store content ?
                 i['content'] = response.body.decode(response.encoding)
             if self.links: # Should we store links ?
@@ -131,7 +131,7 @@ class Crowler(CrawlSpider):
                         lien['disallow'] = True
                     # Check if X-Robots-Tag nofollow
                     if 'nofollow' in response.headers.getlist('X-Robots-Tag'):
-                        lien['nofollow'] = True                
+                        lien['nofollow'] = True
                     # Check if meta robots nofollow
                     if response.xpath('//meta[@name="robots"]/@content[contains(text(),"nofollow")]'):
                         lien['nofollow'] = True
@@ -139,8 +139,8 @@ class Crowler(CrawlSpider):
                     if link.nofollow:
                         lien['nofollow'] = True
                     lien['text'] = str.strip(link.text)
-                    lien['source'] = response.url   
-                    lien['target'] = link.url          
+                    lien['source'] = response.url
+                    lien['target'] = link.url.encode("ascii", "replace")
                     lien['weight'] = 1 - c / max
                     c = c+1
                     outlinks.append(lien)
@@ -155,7 +155,7 @@ class Crowler(CrawlSpider):
                     data.pop(key, None)
             if len(data) > 0:
                 i["microdata"] = json.dumps(data, ensure_ascii=True)
-        return i 
+        return i
 
     def closed(self, reason):
         self.logger.info("Output: {}".format(self.settings.get('OUTPUT_NAME')))
