@@ -24,7 +24,7 @@ Where ``web_crawler``is the name of the parent folder of the docker-compose.yml 
 
 ## Start a crawl
 
-The app container initializes a Linux with python 3 installed but it isn't run the crawler, to start we need to enter inside the container and run it manually
+The app container initializes a Linux with python 3 installed but it doesn't run the crawler, to start we need to enter inside the container and run it manually
 
 ``docker exec -it web_crawler_app_1 /bin/bash ``
 
