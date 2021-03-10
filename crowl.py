@@ -6,6 +6,7 @@ import scrapy
 from utils import *
 from spiders import Crowler
 from pipelines import *
+from ast import literal_eval
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="SEO crawler")
@@ -31,7 +32,7 @@ if __name__ == '__main__':
     # Crawler conf
     settings = get_settings()
     settings.set('USER_AGENT', config.get('CRAWLER','USER_AGENT', fallback='Crowl (+https://www.crowl.tech/)'))
-    settings.set('ROBOTS_TXT_OBEY', config.getboolean('CRAWLER','ROBOTS_TXT_OBEY', fallback=True))
+    settings.set('ROBOTSTXT_OBEY', config.getboolean('CRAWLER','ROBOTS_TXT_OBEY', fallback=True))
     settings.set(
         'DEFAULT_REQUEST_HEADERS', 
         {
@@ -41,13 +42,16 @@ if __name__ == '__main__':
     settings.set('DOWNLOAD_DELAY', float(config.get('CRAWLER','DOWNLOAD_DELAY', fallback=0.5)))
     settings.set('CONCURRENT_REQUESTS', int(config.get('CRAWLER','CONCURRENT_REQUESTS', fallback=5)))
 
-    # Extraction settings
+    # Crawler conf
     conf = {
         'url': start_url, 
         'links': config.getboolean('EXTRACTION','LINKS',fallback=False),
+        'links_unique': config.getboolean('EXTRACTION','LINKS_UNIQUE',fallback=True),
         'content': config.getboolean('EXTRACTION','CONTENT',fallback=False),
         'depth': int(config.get('EXTRACTION','DEPTH',fallback=5)),
-        'exclusion_pattern': config.get('CRAWLER','EXCLUSION_PATTERN',fallback=None)
+        'exclusion_pattern': config.get('CRAWLER','EXCLUSION_PATTERN',fallback=None),
+        'check_lang': config.getboolean('EXTRACTION','CHECK_LANG',fallback=False),
+        'extractors': literal_eval(config.get('EXTRACTION','CUSTOM_EXTRACTORS',fallback=None))
     }
 
     # Output pipelines
@@ -63,6 +67,16 @@ if __name__ == '__main__':
         settings.set('MYSQL_PORT',config['MYSQL']['MYSQL_PORT'])
         settings.set('MYSQL_USER',config['MYSQL']['MYSQL_USER'])
         settings.set('MYSQL_PASSWORD',config['MYSQL']['MYSQL_PASSWORD'])
+
+    if config.getboolean('CRAWLER','USE_PROXIES',fallback=False):
+        settings.set(
+            'DOWNLOADER_MIDDLEWARES',
+            {
+                'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
+                'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
+            }
+        )
+        settings.set('ROTATING_PROXY_LIST_PATH',config.get('CRAWLER','PROXIES_LIST',fallback=None))
 
     #######################
     # New crawl

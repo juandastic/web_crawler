@@ -178,6 +178,7 @@ class CrowlCsvPipeline:
             'html_lang',
             'hreflangs',
             'microdata',
+            'extractors',
         ]
         self.urls_exporter.start_exporting()
 
