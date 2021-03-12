@@ -173,10 +173,14 @@ class Crowler(CrawlSpider):
 
             # Microdata
             base_url = w3lib.html.get_base_url(response.text, response.url)
-            data = extruct.extract(response.text, base_url=base_url, syntaxes=['microdata', 'json-ld'], uniform=True)
-            for key in list(data):
-                if len(data[key]) == 0:
-                    data.pop(key, None)
+            data = []
+            try:
+                data = extruct.extract(response.text, base_url=base_url, syntaxes=['microdata', 'json-ld'], uniform=True)
+                for key in list(data):
+                    if len(data[key]) == 0:
+                        data.pop(key, None)
+            except Exception as e:
+                pass
             if len(data) > 0:
                 i["microdata"] = json.dumps(data, ensure_ascii=False)
 
