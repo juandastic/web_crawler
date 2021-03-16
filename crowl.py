@@ -37,10 +37,12 @@ if __name__ == '__main__':
         'DEFAULT_REQUEST_HEADERS', 
         {
             'Accept': config.get('CRAWLER','MIME_TYPES', fallback='text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'),
-            'Accept-Language': config.get('CRAWLER','ACCEPT_LANGUAGE', fallback='en')
+            'Accept-Language': config.get('CRAWLER','ACCEPT_LANGUAGE', fallback='en'),
         })
     settings.set('DOWNLOAD_DELAY', float(config.get('CRAWLER','DOWNLOAD_DELAY', fallback=0.5)))
     settings.set('CONCURRENT_REQUESTS', int(config.get('CRAWLER','CONCURRENT_REQUESTS', fallback=5)))
+    # Don't send referer
+    settings.set('REFERER_ENABLED', False)
 
     # Crawler conf
     conf = {
@@ -51,7 +53,9 @@ if __name__ == '__main__':
         'depth': int(config.get('EXTRACTION','DEPTH',fallback=5)),
         'exclusion_pattern': config.get('CRAWLER','EXCLUSION_PATTERN',fallback=None),
         'check_lang': config.getboolean('EXTRACTION','CHECK_LANG',fallback=False),
-        'extractors': literal_eval(config.get('EXTRACTION','CUSTOM_EXTRACTORS',fallback=None))
+        'extractors': literal_eval(config.get('EXTRACTION','CUSTOM_EXTRACTORS',fallback=None)),
+        'http_user': config.get('AUTH','HTTP_USER',fallback=None),
+        'http_pass': config.get('AUTH','HTTP_PASS',fallback=None),
     }
 
     # Output pipelines
@@ -68,13 +72,28 @@ if __name__ == '__main__':
         settings.set('MYSQL_USER',config['MYSQL']['MYSQL_USER'])
         settings.set('MYSQL_PASSWORD',config['MYSQL']['MYSQL_PASSWORD'])
 
-    if config.getboolean('CRAWLER','USE_PROXIES',fallback=False):
+    if config.getboolean('CRAWLER','ROTATE_USER_AGENTS',fallback=False):
+        middlewares = settings.get('DOWNLOADER_MIDDLEWARES')
+        middlewares.update({
+            'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+            'scrapy_useragents.downloadermiddlewares.useragents.UserAgentsMiddleware': 500,
+        })
         settings.set(
             'DOWNLOADER_MIDDLEWARES',
-            {
-                'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
-                'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
-            }
+            middlewares
+        )
+        user_agents_list = [line.strip() for line in open(config.get('CRAWLER','USER_AGENTS_LIST'), 'r')]
+        settings.set('USER_AGENTS',user_agents_list)
+
+    if config.getboolean('CRAWLER','USE_PROXIES',fallback=False):
+        middlewares = settings.get('DOWNLOADER_MIDDLEWARES')
+        middlewares.update({
+            'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
+            'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
+        })
+        settings.set(
+            'DOWNLOADER_MIDDLEWARES',
+            middlewares
         )
         settings.set('ROTATING_PROXY_LIST_PATH',config.get('CRAWLER','PROXIES_LIST',fallback=None))
 

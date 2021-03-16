@@ -16,8 +16,10 @@ from items import CrowlItem
 class Crowler(CrawlSpider):
     name = 'Crowl'
     handle_httpstatus_list = [301,302,403,404,410,500,502,503,504]
+    http_user = ''
+    http_pass = ''
 
-    def __init__(self, url, links=False, links_unique=True, content=False, depth=5, exclusion_pattern=None, check_lang=False, extractors=None, *args, **kwargs):
+    def __init__(self, url, links=False, links_unique=True, content=False, depth=5, exclusion_pattern=None, check_lang=False, extractors=None, http_user=None, http_pass=None, *args, **kwargs):
         domain = urlparse(url).netloc
         # Setup the rules for link extraction
         if exclusion_pattern:
@@ -37,6 +39,11 @@ class Crowler(CrawlSpider):
         self.check_lang = check_lang # Store check-lang results ?  
         self.extractors = extractors # Custom extractors ?
 
+        # HTTP Auth
+        if http_user and http_pass:
+            self.http_user = http_user
+            self.http_pass = http_pass
+
         if self.check_lang: # Should we check content language ?
             import fasttext
             self.model = fasttext.load_model('data/lid.176.bin')
@@ -45,6 +52,11 @@ class Crowler(CrawlSpider):
         self.robots = Robots.fetch(urlparse(url).scheme + '://' + domain + '/robots.txt')
 
 
+    def start_requests(self):
+        requests = []
+        for item in self.start_urls:
+            requests.append(scrapy.Request(url=item, headers=self.settings.get("DEFAULT_REQUEST_HEADERS")))
+        return requests
 
     def parse_start_url(self,response):
         """
