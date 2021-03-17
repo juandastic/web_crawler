@@ -111,6 +111,9 @@ def create_urls_table(basename,host,port,user,password):
                 `hreflangs` text DEFAULT NULL,
                 `microdata` text DEFAULT NULL,
                 `extractors` text DEFAULT NULL,
+                `request_headers` text DEFAULT NULL,
+                `response_headers` text DEFAULT NULL,
+                `redirect` varchar(4096) DEFAULT NULL,
                 PRIMARY KEY (id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=1;
             """

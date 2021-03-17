@@ -19,7 +19,7 @@ class Crowler(CrawlSpider):
     http_user = ''
     http_pass = ''
 
-    def __init__(self, url, links=False, links_unique=True, content=False, depth=5, exclusion_pattern=None, check_lang=False, extractors=None, http_user=None, http_pass=None, *args, **kwargs):
+    def __init__(self, url, links=False, links_unique=True, content=False, depth=5, exclusion_pattern=None, check_lang=False, extractors=None, store_request_headers=False, store_response_headers=False, http_user=None, http_pass=None, *args, **kwargs):
         domain = urlparse(url).netloc
         # Setup the rules for link extraction
         if exclusion_pattern:
@@ -38,6 +38,8 @@ class Crowler(CrawlSpider):
         self.depth = depth # How deep should we go ?
         self.check_lang = check_lang # Store check-lang results ?  
         self.extractors = extractors # Custom extractors ?
+        self.store_request_headers = store_request_headers
+        self.store_response_headers = store_response_headers
 
         # HTTP Auth
         if http_user and http_pass:
@@ -53,9 +55,10 @@ class Crowler(CrawlSpider):
 
 
     def start_requests(self):
+        headers = self.settings.get("DEFAULT_REQUEST_HEADERS")
         requests = []
         for item in self.start_urls:
-            requests.append(scrapy.Request(url=item, headers=self.settings.get("DEFAULT_REQUEST_HEADERS")))
+            requests.append(scrapy.Request(url=item, headers=headers))
         return requests
 
     def parse_start_url(self,response):
@@ -102,8 +105,12 @@ class Crowler(CrawlSpider):
         if dat: # date from HTTP headers
             i['http_date'] = dat.decode('utf-8')
         cach = response.headers.get('x-cache', None)
-        if cach: # x-cache header from ouicars cloudfront
+        if cach: # x-cache header
             i['x_cache'] = cach.decode('utf-8')
+        if self.store_request_headers:
+            i['request_headers'] = json.dumps(response.request.headers.to_unicode_dict())
+        if self.store_response_headers:
+            i['response_headers'] = json.dumps(response.headers.to_unicode_dict())
 
 
         if response.status == 200: # Data only available for 200 OK urls  
@@ -211,7 +218,12 @@ class Crowler(CrawlSpider):
                         })
 
                 i["extractors"] = json.dumps(extracted, ensure_ascii=False)
-            
+
+        elif response.status > 300 and response.status < 400:
+            loc = response.headers.get('location', None)
+            if loc: # get redirect location
+                i['redirect'] = loc.decode('utf-8')
+         
         return i 
 
     def closed(self, reason):

@@ -38,3 +38,6 @@ class CrowlItem(scrapy.Item):
     hreflangs = scrapy.Field()
     microdata = scrapy.Field()
     extractors = scrapy.Field()
+    request_headers = scrapy.Field()
+    response_headers = scrapy.Field()
+    redirect = scrapy.Field()

@@ -41,8 +41,8 @@ if __name__ == '__main__':
         })
     settings.set('DOWNLOAD_DELAY', float(config.get('CRAWLER','DOWNLOAD_DELAY', fallback=0.5)))
     settings.set('CONCURRENT_REQUESTS', int(config.get('CRAWLER','CONCURRENT_REQUESTS', fallback=5)))
-    # Don't send referer
-    settings.set('REFERER_ENABLED', False)
+    # Set referer setting
+    settings.set('REFERER_ENABLED', config.getboolean('CRAWLER', 'REFERER_ENABLED', fallback=True))
 
     # Crawler conf
     conf = {
@@ -54,6 +54,8 @@ if __name__ == '__main__':
         'exclusion_pattern': config.get('CRAWLER','EXCLUSION_PATTERN',fallback=None),
         'check_lang': config.getboolean('EXTRACTION','CHECK_LANG',fallback=False),
         'extractors': literal_eval(config.get('EXTRACTION','CUSTOM_EXTRACTORS',fallback=None)),
+        'store_request_headers': config.getboolean('EXTRACTION','STORE_REQUEST_HEADERS',fallback=False),
+        'store_response_headers': config.getboolean('EXTRACTION','STORE_RESPONSE_HEADERS',fallback=False),
         'http_user': config.get('AUTH','HTTP_USER',fallback=None),
         'http_pass': config.get('AUTH','HTTP_PASS',fallback=None),
     }
