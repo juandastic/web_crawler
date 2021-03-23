@@ -33,16 +33,20 @@ if __name__ == '__main__':
     settings = get_settings()
     settings.set('USER_AGENT', config.get('CRAWLER','USER_AGENT', fallback='Crowl (+https://www.crowl.tech/)'))
     settings.set('ROBOTSTXT_OBEY', config.getboolean('CRAWLER','ROBOTS_TXT_OBEY', fallback=True))
-    settings.set(
-        'DEFAULT_REQUEST_HEADERS', 
-        {
+    # Set headers
+    headers = settings.get('DEFAULT_REQUEST_HEADERS')
+    headers.update({
             'Accept': config.get('CRAWLER','MIME_TYPES', fallback='text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'),
             'Accept-Language': config.get('CRAWLER','ACCEPT_LANGUAGE', fallback='en'),
-        })
+    })
+    settings.set('DEFAULT_REQUEST_HEADERS', headers)
+    # Set crawl speed
     settings.set('DOWNLOAD_DELAY', float(config.get('CRAWLER','DOWNLOAD_DELAY', fallback=0.5)))
     settings.set('CONCURRENT_REQUESTS', int(config.get('CRAWLER','CONCURRENT_REQUESTS', fallback=5)))
     # Set referer setting
     settings.set('REFERER_ENABLED', config.getboolean('CRAWLER', 'REFERER_ENABLED', fallback=True))
+    # Set requests limit
+    settings.set('CLOSESPIDER_PAGECOUNT',int(config.get('EXTRACTION','MAX_REQUESTS',fallback=0)))
 
     # Crawler conf
     conf = {
