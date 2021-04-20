@@ -17,7 +17,7 @@ class CrowlMySQLPipeline:
         return cls(crawler)
 
     def __init__(self, crawler):
-        logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__)
         self.stats = crawler.stats
         self.settings = crawler.settings
         db_args = {
@@ -67,13 +67,13 @@ class CrowlMySQLPipeline:
                         CR_CONNECTION_ERROR,
                 ):
                     retries -= 1
-                    logger.info('%s %s attempts to reconnect left', e, retries)
+                    self.logger.info('%s %s attempts to reconnect left', e, retries)
                     self.stats.inc_value('{}/reconnects'.format(self.stats_name))
                     continue
-                logger.exception('%s', pprint.pformat(item))
+                self.logger.exception('%s', pprint.pformat(item))
                 self.stats.inc_value('{}/errors'.format(self.stats_name))
             except Exception:
-                logger.exception('%s', pprint.pformat(item))
+                self.logger.exception('%s', pprint.pformat(item))
                 self.stats.inc_value('{}/errors'.format(self.stats_name))
             else:
                 status = True  # executed without errors
@@ -119,7 +119,7 @@ class CrowlMySQLPipeline:
                 try:
                     tx.execute(sql, data)
                 except Exception:
-                    logger.error("SQL: %s", sql)
+                    self.logger.error("SQL: %s", sql)
                     raise
 
             # Replace outlinks dict with count of outlinks before inserting url data
@@ -128,7 +128,7 @@ class CrowlMySQLPipeline:
         try:
             tx.execute(sql, data)
         except Exception:
-            logger.error("SQL: %s", sql)
+            self.logger.error("SQL: %s", sql)
             raise
 
 
@@ -141,7 +141,7 @@ class CrowlCsvPipeline:
         return cls(crawler)
     
     def __init__(self, crawler):
-        logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__)
         self.stats = crawler.stats
         self.settings = crawler.settings
 
