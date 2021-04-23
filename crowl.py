@@ -48,6 +48,10 @@ if __name__ == '__main__':
     # Set requests limit
     settings.set('CLOSESPIDER_PAGECOUNT',int(config.get('EXTRACTION','MAX_REQUESTS',fallback=0)))
 
+    extractors = config.get('EXTRACTION','CUSTOM_EXTRACTORS',fallback=None)
+    if extractors:
+        extractors = literal_eval(extractors)
+
     # Crawler conf
     conf = {
         'url': start_url, 
@@ -57,7 +61,7 @@ if __name__ == '__main__':
         'depth': int(config.get('EXTRACTION','DEPTH',fallback=5)),
         'exclusion_pattern': config.get('CRAWLER','EXCLUSION_PATTERN',fallback=None),
         'check_lang': config.getboolean('EXTRACTION','CHECK_LANG',fallback=False),
-        'extractors': literal_eval(config.get('EXTRACTION','CUSTOM_EXTRACTORS',fallback=None)),
+        'extractors': extractors,
         'store_request_headers': config.getboolean('EXTRACTION','STORE_REQUEST_HEADERS',fallback=False),
         'store_response_headers': config.getboolean('EXTRACTION','STORE_RESPONSE_HEADERS',fallback=False),
         'http_user': config.get('AUTH','HTTP_USER',fallback=None),

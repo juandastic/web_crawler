@@ -34,3 +34,5 @@ Read [the docs](https://www.crowl.tech/docs/) for more details on config options
 ## Contributing
 
 If you wish to contribute to this repository or to report an issue, please do this [on GitLab](https://gitlab.com/crowltech/crowl).  
+
+<a href="https://www.buymeacoffee.com/crowltech" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
