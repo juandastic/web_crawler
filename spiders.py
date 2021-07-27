@@ -148,7 +148,12 @@ class Crowler(CrawlSpider):
                 i['hreflangs'] = 'None'
             
             # Word Count
-            body_content = response.xpath('//body').extract()[0]
+            try:
+                body_content = response.xpath('//body').extract()[0]
+            except IndexError as e:
+                body_content = ""
+                
+
             content_text = w3lib.html.remove_tags_with_content(body_content, which_ones=('style','script'))
             content_text = w3lib.html.remove_tags(content_text)
             i['wordcount'] = len(re.split('[\s\t\n, ]+',content_text, flags=re.UNICODE))
