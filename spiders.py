@@ -15,23 +15,51 @@ from items import CrowlItem
 
 class Crowler(CrawlSpider):
     name = 'Crowl'
-    handle_httpstatus_list = [301,302,404,410,500,503,504]
+    handle_httpstatus_list = [301,302,403,404,410,500,502,503,504]
+    http_user = ''
+    http_pass = ''
 
-    def __init__(self, url, links=False, content=False, depth=5, *args, **kwargs):
+    def __init__(self, url, links=False, links_unique=True, content=False, depth=5, exclusion_pattern=None, check_lang=False, extractors=None, store_request_headers=False, store_response_headers=False, http_user=None, http_pass=None, *args, **kwargs):
         domain = urlparse(url).netloc
-        # We'll crawl only internal links
-        self._rules = [
-            Rule(LinkExtractor(allow='.*'+domain+'/.*'), callback=self.parse_url, follow=True)
-        ]
+        # Setup the rules for link extraction
+        if exclusion_pattern:
+            self._rules = [
+                Rule(LinkExtractor(allow='.*'+domain+'/.*', deny=exclusion_pattern), callback=self.parse_url, follow=True)
+            ]
+        else:
+            self._rules = [
+                Rule(LinkExtractor(allow='.*'+domain+'/.*'), callback=self.parse_url, follow=True)
+            ]
         self.allowed_domains = [domain]
         self.start_urls = [url]
         self.links = links # Should we store links ?
+        self.links_unique = links_unique # Should we store only unique links ?
         self.content = content # Should we store content ?
         self.depth = depth # How deep should we go ?
+        self.check_lang = check_lang # Store check-lang results ?  
+        self.extractors = extractors # Custom extractors ?
+        self.store_request_headers = store_request_headers
+        self.store_response_headers = store_response_headers
+
+        # HTTP Auth
+        if http_user and http_pass:
+            self.http_user = http_user
+            self.http_pass = http_pass
+
+        if self.check_lang: # Should we check content language ?
+            import fasttext
+            self.model = fasttext.load_model('data/lid.176.bin')
+
         # robots.txt enhanced
         self.robots = Robots.fetch(urlparse(url).scheme + '://' + domain + '/robots.txt')
 
 
+    def start_requests(self):
+        headers = self.settings.get("DEFAULT_REQUEST_HEADERS")
+        requests = []
+        for item in self.start_urls:
+            requests.append(scrapy.Request(url=item, headers=headers))
+        return requests
 
     def parse_start_url(self,response):
         """
@@ -76,6 +104,14 @@ class Crowler(CrawlSpider):
         dat = response.headers.get('date', None)
         if dat: # date from HTTP headers
             i['http_date'] = dat.decode('utf-8')
+        cach = response.headers.get('x-cache', None)
+        if cach: # x-cache header
+            i['x_cache'] = cach.decode('utf-8')
+        if self.store_request_headers:
+            i['request_headers'] = json.dumps(response.request.headers.to_unicode_dict())
+        if self.store_response_headers:
+            i['response_headers'] = json.dumps(response.headers.to_unicode_dict())
+
 
         if response.status == 200: # Data only available for 200 OK urls
             # `extract_first(default='None')` returns 'None' if empty, prevents errors
@@ -112,16 +148,28 @@ class Crowler(CrawlSpider):
                 i['hreflangs'] = 'None'
 
             # Word Count
-            body_content = response.xpath('//body').extract()[0]
+            try:
+                body_content = response.xpath('//body').extract()[0]
+            except IndexError as e:
+                body_content = ""
+                
+
             content_text = w3lib.html.remove_tags_with_content(body_content, which_ones=('style','script'))
             content_text = w3lib.html.remove_tags(content_text)
             i['wordcount'] = len(re.split('[\s\t\n, ]+',content_text, flags=re.UNICODE))
+            
+            if self.check_lang: # Should we check content language ?
+                content_text = content_text.replace('\n','')
+                content_text = content_text.replace('\r','')
+                res = self.model.predict(content_text)
+                i['content_lang'] = res[0][0].replace("__label__","")
+                i['content_lang_note'] = float(res[1][0])
 
             if self.content: # Should we store content ?
                 i['content'] = response.body.decode(response.encoding)
             if self.links: # Should we store links ?
                 outlinks = list()
-                links = LinkExtractor().extract_links(response)
+                links = LinkExtractor(unique=self.links_unique).extract_links(response)
                 c = 0
                 max = len(links)
                 for link in links:
@@ -149,13 +197,39 @@ class Crowler(CrawlSpider):
 
             # Microdata
             base_url = w3lib.html.get_base_url(response.text, response.url)
-            data = extruct.extract(response.text, base_url=base_url, syntaxes=['microdata', 'json-ld'], uniform=True)
-            for key in list(data):
-                if len(data[key]) == 0:
-                    data.pop(key, None)
+            data = []
+            try:
+                data = extruct.extract(response.text, base_url=base_url, syntaxes=['microdata', 'json-ld'], uniform=True)
+                for key in list(data):
+                    if len(data[key]) == 0:
+                        data.pop(key, None)
+            except Exception as e:
+                pass
             if len(data) > 0:
-                i["microdata"] = json.dumps(data, ensure_ascii=True)
-        return i
+                i["microdata"] = json.dumps(data, ensure_ascii=False)
+
+            if self.extractors:
+                extracted = list()
+                for ext in self.extractors:
+                    if ext["type"] == "xpath":
+                        extracted.append({
+                            'name':ext["name"],
+                            'data':response.xpath(ext["pattern"]).extract_first(default='None').strip()
+                        })
+                    else:
+                        extracted.append({
+                            'name':ext["name"],
+                            'data':"Error: extractor type '{}' not supported.".format(ext["type"])
+                        })
+
+                i["extractors"] = json.dumps(extracted, ensure_ascii=False)
+
+        elif response.status > 300 and response.status < 400:
+            loc = response.headers.get('location', None)
+            if loc: # get redirect location
+                i['redirect'] = loc.decode('utf-8')
+         
+        return i 
 
     def closed(self, reason):
         self.logger.info("Output: {}".format(self.settings.get('OUTPUT_NAME')))

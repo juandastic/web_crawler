@@ -102,11 +102,18 @@ def create_urls_table(basename,host,port,user,password):
                 `content` text DEFAULT NULL,
                 `XRobotsTag` varchar(256) DEFAULT NULL,
                 `outlinks` int(11) DEFAULT '0',
+                `x_cache` varchar(256) DEFAULT NULL,
                 `http_date` varchar(256) DEFAULT NULL,
                 `size` int(11) DEFAULT NULL,
                 `html_lang` varchar(128) DEFAULT NULL,
+                `content_lang` varchar(128) DEFAULT NULL,
+                `content_lang_note` float(11) DEFAULT '0',
                 `hreflangs` text DEFAULT NULL,
-                `microdata` longtext DEFAULT NULL,
+                `microdata` text DEFAULT NULL,
+                `extractors` text DEFAULT NULL,
+                `request_headers` text DEFAULT NULL,
+                `response_headers` text DEFAULT NULL,
+                `redirect` varchar(4096) DEFAULT NULL,
                 PRIMARY KEY (id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=1;
             """

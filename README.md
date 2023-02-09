@@ -2,6 +2,7 @@
 This is a fork of  [crowl](https://gitlab.com/crowltech/crowl) an open-source SEO crawler.
 [Official docs](https://www.crowl.tech/docs/)
 
+
 ## Setup
 
 This version use docker to create and Pyhton container and Mysql container to process and store all the collected data
