@@ -82,7 +82,7 @@ def create_urls_table(basename,host,port,user,password):
                 `response_code` int(11) NOT NULL DEFAULT '0',
                 `content_type` varchar(128) DEFAULT NULL,
                 `level` int(11) NOT NULL DEFAULT '-1',
-                `referer` varchar(4096) DEFAULT NULL,
+                `referer` text DEFAULT NULL,
                 `latency` float(11) DEFAULT '0',
                 `crawled_at` varchar(128) DEFAULT '0',
                 `nb_title` int(11) NOT NULL DEFAULT '0',
@@ -92,9 +92,9 @@ def create_urls_table(basename,host,port,user,password):
                 `meta_description` varchar(1024) DEFAULT NULL,
                 `meta_viewport` varchar(256) DEFAULT NULL,
                 `meta_keywords` varchar(256) DEFAULT NULL,
-                `canonical` varchar(4096) DEFAULT NULL,
-                `prev` varchar(4096) DEFAULT NULL,
-                `next` varchar(4096) DEFAULT NULL,
+                `canonical` text DEFAULT NULL,
+                `prev` text DEFAULT NULL,
+                `next` text DEFAULT NULL,
                 `h1` varchar(512) DEFAULT NULL,
                 `nb_h1` int(11) NOT NULL DEFAULT '0',
                 `nb_h2` int(11) NOT NULL DEFAULT '0',
@@ -115,7 +115,7 @@ def create_urls_table(basename,host,port,user,password):
                 `response_headers` text DEFAULT NULL,
                 `redirect` varchar(4096) DEFAULT NULL,
                 PRIMARY KEY (id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=1;
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1;
             """
             cursor.execute(sql)
         connection.commit()
@@ -141,14 +141,14 @@ def create_links_table(basename,host,port,user,password):
             sql = """
             CREATE TABLE `links` (
                 `id` int(11) NOT NULL AUTO_INCREMENT,
-                `source` varchar(4096) NOT NULL,
-                `target` varchar(4096) NOT NULL,
+                `source` text NOT NULL,
+                `target` text NOT NULL,
                 `text` varchar(1024) NOT NULL,
                 `weight` float DEFAULT '1',
                 `nofollow` tinyint(1) DEFAULT NULL,
                 `disallow` tinyint(1) DEFAULT NULL,
                 PRIMARY KEY (id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=1;
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1;
             """
             cursor.execute(sql)
         connection.commit()

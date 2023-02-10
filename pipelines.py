@@ -4,6 +4,7 @@ from pymysql.constants.CR import CR_SERVER_GONE_ERROR,  CR_SERVER_LOST, CR_CONNE
 from twisted.internet import defer
 from twisted.enterprise import adbapi
 from scrapy.exporters import CsvItemExporter
+import pprint
 import copy
 import logging
 
@@ -18,6 +19,7 @@ class CrowlMySQLPipeline:
 
     def __init__(self, crawler):
         self.logger = logging.getLogger(__name__)
+        self.stats_name = "stats"
         self.stats = crawler.stats
         self.settings = crawler.settings
         db_args = {
@@ -26,7 +28,7 @@ class CrowlMySQLPipeline:
             'user': self.settings.get('MYSQL_USER', None),
             'password': self.settings.get('MYSQL_PASSWORD', ''),
             'db': self.settings.get('OUTPUT_NAME', None),
-            'charset': 'utf8',
+            'charset': 'utf8mb4',
             'cursorclass': DictCursor,
             'cp_reconnect': True,
         }
@@ -142,6 +144,7 @@ class CrowlCsvPipeline:
     
     def __init__(self, crawler):
         self.logger = logging.getLogger(__name__)
+        self.stats_name = "stats"
         self.stats = crawler.stats
         self.settings = crawler.settings
 
